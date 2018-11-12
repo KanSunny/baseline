@@ -1,4 +1,4 @@
-NiNE--Network Embedding baseline
+SiNE--Network Embedding baseline
 
 Signed Network Embedding in Social Media
 
