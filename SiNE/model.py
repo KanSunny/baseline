@@ -4,7 +4,6 @@ from torch.nn.parameter import Parameter
 from torch.autograd import Variable
 import numpy as np
 import torch.optim as optim
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"###
 
 def hadamard(x, y):
     return x * y
@@ -77,7 +76,6 @@ class SiNE(nn.Module):
             loss = torch.max(zeros, f_pos + delta0 - f_neg)
         else:
             loss = torch.max(zeros, f_pos + delta - f_neg)
-        print(loss)
         loss = torch.sum(loss)
 
         return loss
@@ -111,7 +109,7 @@ class SiNE(nn.Module):
 def tensorfy_col(x, col_idx):
     col = x[:,col_idx]# the rows col_idx
     col = torch.LongTensor(col)
-    col = Variable(col).cuda()###
+    col = Variable(col)
     return col
 
 
@@ -127,7 +125,6 @@ def get_training_batch(triples, batch_size):
 
 def fit_model(sine, triplets, delta, delta0, batch_size, epochs, alpha,
                 lr=0.4, weight_decay=0.0, print_loss=True):
-    sine = sine.cuda()###
     optimizer = optim.Adagrad(sine.parameters(), lr=lr, weight_decay=weight_decay)
     for epoch in range(epochs):
         sine.zero_grad()

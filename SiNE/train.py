@@ -21,7 +21,7 @@ class TT(object):
     
     def train(self):
         sine = SiNE(self.nodes_num, 20, 20)
-        fit_model(sine, self.training_data, 1, 0.5, 1, 100, 0.0001)
+        fit_model(sine, self.training_data, 1, 0.5, 1, 1000, 0.0001)
         print("3. Training finished！")
         torch.save(sine.state_dict(), './parameters')
         
@@ -44,4 +44,4 @@ class TT(object):
 
 tt = TT()
 #tt.train()
-#tt.test()
+tt.test()
