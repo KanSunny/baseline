@@ -1,11 +1,6 @@
-
-# coding: utf-8
-
-# In[20]:
-
-
 import networkx as nx
 import numpy as np
+import random
 
 '''
 node <-> id
@@ -47,6 +42,7 @@ class Graph(object):
         #2. correspond node and id
         self.vocab = Vocabulary(positive_graph)
         self.vocab.augment(negative_graph)
+        self._get_triplets()
         
     def get_positive_edges(self):
         return self.positive_graph.edges()
@@ -58,8 +54,9 @@ class Graph(object):
         return len(self.vocab)
     
     #3. according to graph, create triplet dataset(shown by id)
-    def get_triplets(self, p0=True, ids=True):
-        triplets = []
+    def _get_triplets(self, p0=True, ids=True):
+        self.train_triplets = []
+        self.test_triplets = []
         #print(self.negative_graph.edges())
         #print(self.positive_graph.edges())
         for xi in self.positive_graph.nodes():# xi positive point
@@ -68,20 +65,33 @@ class Graph(object):
                 if xj in self.negative_graph:
                     for xk in self.negative_graph[xj]:# xk is negative point
                         a, b, c = xi, xj, xk
-                        #if ids:
-                        #    a = self.vocab.node2id(xi)
-                        #    b = self.vocab.node2id(xj)
-                        #    c = self.vocab.node2id(xk)
-                        triplets.append([b, a, c])
+                        if ids:
+                            a = self.vocab.node2id(xi)
+                            b = self.vocab.node2id(xj)
+                            c = self.vocab.node2id(xk)
+                            if random.random() >= 0.8:
+                                self.test_triplets.append([b, a, c])
+                            else:
+                                self.train_triplets.append([b, a, c])
                 elif p0:
                     a, b = xi, xj
-                    c = -1
-                    #if ids:
-                    #    a = self.vocab.node2id(xi)
-                    #    b = self.vocab.node2id(xj)
-                    triplets.append([b, a, c])
-        triplets = np.array(triplets)
-        return triplets# [query, positive, negative]
+                    c = 0
+                    if ids:
+                        a = self.vocab.node2id(xi)
+                        b = self.vocab.node2id(xj)
+                    if random.random() >= 0.8:
+                        self.test_triplets.append([b, a, c])
+                    else:
+                        self.train_triplets.append([b, a, c])
+        self.train_triplets = np.array(self.train_triplets)
+        self.test_triplets = np.array(self.test_triplets)
+        #return triplets# [query, positive, negative]
+    
+    def get_training_triplets(self):
+        return self.train_triplets
+    
+    def get_testing_triplets(self):
+        return self.test_triplets
     
     @staticmethod# use this function with init Graph
     def read_from_file(filepath, delimiter=' ', directed=False):
@@ -106,6 +116,8 @@ class Graph(object):
         graph = Graph(positive_graph, negative_graph)
         return graph
 
-a = Graph.read_from_file('/home/kansunny/Documents/postgraduate/hash_community/hsne/code/dataset/test.txt')
-a.get_triplets()
-
+#graph = Graph.read_from_file('/home/kansunny/Documents/postgraduate/hash_community/hsne/code/dataset/epinions.txt',delimiter='	')
+#train = graph.get_testing_triplets()
+#test = graph.get_testing_triplets()
+#print(train)
+#print(test)
