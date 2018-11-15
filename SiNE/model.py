@@ -1,9 +1,12 @@
+import os
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
 from torch.autograd import Variable
 import numpy as np
 import torch.optim as optim
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"###
+
 
 def hadamard(x, y):
     return x * y
@@ -69,8 +72,9 @@ class SiNE(nn.Module):
         
         f_pos = self.tanh(self.layer3(z21) + self.bias3)
         f_neg = self.tanh(self.layer3(z22) + self.bias3)
+        #print(f_pos)
 
-        zeros = Variable(torch.zeros(1))
+        zeros = Variable(torch.zeros(1)).cuda()###
         
         if xk is not 0:
             loss = torch.max(zeros, f_pos + delta0 - f_neg)
@@ -97,19 +101,29 @@ class SiNE(nn.Module):
     def get_embedding(self, x):
         x = Variable(torch.LongTensor([x]))
         emb = self.embeddings(x)
-        emb = emb.data.numpy()[0]
+        #emb = emb.data.numpy()[0]
         return emb
 
-    def get_edge_feature(self, x, y, operation='hadamard'):
+    def get_edge_feature(self, x, y):
+        #func = FEATURE_FUNCS[operation]
+        x = self.get_embedding(x)
+        y = self.get_embedding(y)
+        z1 = self.tanh(self.layer11(x) + self.layer12(y) + self.bias1)
+        z2 = self.tanh(self.layer2(z1) + self.bias2)
+        return self.tanh(self.layer3(z2) + self.bias3)
+
+    def get_distance(self, x, y, operation):
         func = FEATURE_FUNCS[operation]
         x = self.get_embedding(x)
         y = self.get_embedding(y)
+        x = x.data.numpy()[0]
+        y = y.data.numpy()[0]
         return func(x, y)
 
 def tensorfy_col(x, col_idx):
     col = x[:,col_idx]# the rows col_idx
     col = torch.LongTensor(col)
-    col = Variable(col)
+    col = Variable(col).cuda()###
     return col
 
 
@@ -125,6 +139,7 @@ def get_training_batch(triples, batch_size):
 
 def fit_model(sine, triplets, delta, delta0, batch_size, epochs, alpha,
                 lr=0.4, weight_decay=0.0, print_loss=True):
+    sine = sine.cuda()###
     optimizer = optim.Adagrad(sine.parameters(), lr=lr, weight_decay=weight_decay)
     for epoch in range(epochs):
         sine.zero_grad()
@@ -140,9 +155,3 @@ def fit_model(sine, triplets, delta, delta0, batch_size, epochs, alpha,
         if print_loss:
             print('Loss at epoch ', epoch + 1, ' is ', loss.data[0])
     return sine
-
-def link_prediction(sine, triplets, delta, delta0, batch_size = 1):
-    xi, xj, xk = get_training_batch(triplets, batch_size)
-    #print(xi)
-    loss = sine(xi, xj, xk, delta, delta0)
-    return loss
